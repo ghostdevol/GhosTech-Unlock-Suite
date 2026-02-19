@@ -1,0 +1,30 @@
+<!-- UI_START -->
+
+<div id="dashboard">
+
+  <!-- DEVICE INFO PANEL -->
+  <section id="device-info" class="panel">
+    <h2>Device Information</h2>
+    <div id="device-status">Waiting for device...</div>
+    <ul id="device-details">
+      <!-- Filled dynamically by device.js -->
+    </ul>
+  </section>
+
+  <!-- UNLOCK OPTIONS -->
+  <section id="unlock-options" class="panel">
+    <h2>Unlock Tools</h2>
+
+    <button class="ghost-btn" onclick="runFRP()">FRP Unlock</button>
+    <button class="ghost-btn" onclick="runNetwork()">Network Unlock</button>
+    <button class="ghost-btn" onclick="openOEM()">OEM Tools</button>
+    <button class="ghost-btn" onclick="openFastboot()">Fastboot Tools</button>
+  </section>
+
+  <!-- REAL-TIME LOGS -->
+  <section id="logs" class="panel">
+    <h2>Logs</h2>
+    <pre id="log-output">Initializing...</pre>
+  </section>
+
+</div>
