@@ -1,0 +1,41 @@
+{
+  "name": "ghosttech-adb-tool",
+  "version": "1.2.0",
+  "description": "Forensic-grade unlock suite with consent logging, credit enforcement, and device mirroring.",
+  "author": "Daniel Sielaff",
+  "license": "MIT",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder"
+  },
+  "dependencies": {
+    "pdfkit": "^0.13.0"
+  },
+  "devDependencies": {
+    "electron": "^29.0.0",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "com.ghosttech.adbtool",
+    "productName": "GhostTech ADB-Tool",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "**/*",
+      "assets/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "assets/",
+        "to": "assets",
+        "filter": ["**/*"]
+      }
+    ],
+    "win": {
+      "target": "portable",
+      "icon": "assets/logo.ico"
+    }
+  }
+}

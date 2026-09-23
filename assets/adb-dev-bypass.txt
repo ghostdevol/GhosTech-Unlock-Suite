@@ -1,0 +1,1 @@
+ghosttech-unlock.sh --dev-mode

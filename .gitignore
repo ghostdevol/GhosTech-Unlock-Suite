@@ -1,0 +1,38 @@
+# GhostTech ADB-Tool
+node_modules/
+dist/
+out/
+
+# Local runtime / licensing (never commit)
+tools-local/
+master-private.pem
+*.license.json
+license.json
+credits.json
+unlock.log
+consent.log
+consent_*.pdf
+
+# Device blobs & drivers (too big / redistributable)
+firmware/
+drivers/
+Data/
+assets/firmware/
+assets/drivers/
+assets/mtk_testpoints/
+assets/Data/
+*.exe
+*.dll
+*.msi
+*.zip
+*.img
+*.bin
+*.raw
+*.efs
+*.elf
+!assets/logo.png
+!assets/logo.ico
+
+# Logs
+logs/
+*.log

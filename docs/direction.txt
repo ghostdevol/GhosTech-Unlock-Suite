@@ -1,0 +1,9 @@
+Gumroad → Generates license key
+↓
+User visits your GitHub-hosted UI
+↓
+Enters license key → Validated
+↓
+Unlocks access to tools + downloads
+↓
+You update tools modularly via Gumroad posts

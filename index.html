@@ -1,30 +1,209 @@
-<!-- UI_START -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>GhostTech ADB-Tool</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background: #111;
+      color: #eee;
+      padding: 2em;
+    }
+    h1 { color: #0ff; }
+    select, button {
+      padding: 0.5em 1em;
+      margin: 0.5em 0;
+      background: #333;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+    }
+    button:disabled { opacity: 0.35; cursor: not-allowed; }
+    #deviceModel, #creditMeter {
+      margin: 1em 0;
+      font-weight: bold;
+    }
+    #deviceModel { color: #0f0; }
+    #creditMeter { color: #ff0; }
+    pre {
+      background: #222;
+      padding: 1em;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+    .ghosttech-modal {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.8);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .ghosttech-modal.hidden { display: none; }
+    .ghosttech-modal-content {
+      background: #222;
+      padding: 2em;
+      border-radius: 8px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <img src="./assets/logo.png" alt="GhostTech by GhostDevol Logo" />
+  <h1>GhostTech ADB-Tool</h1>
 
-<div id="dashboard">
+  <div id="deviceModel">Device: Not detected</div>
+  <div id="creditMeter">Credits: Loading...</div>
 
-  <!-- DEVICE INFO PANEL -->
-  <section id="device-info" class="panel">
-    <h2>Device Information</h2>
-    <div id="device-status">Waiting for device...</div>
-    <ul id="device-details">
-      <!-- Filled dynamically by device.js -->
-    </ul>
-  </section>
+  <label for="firmwareDropdown">Select Firmware:</label>
+  <select id="firmwareDropdown"></select>
 
-  <!-- UNLOCK OPTIONS -->
-  <section id="unlock-options" class="panel">
-    <h2>Unlock Tools</h2>
+  <div id="consentBlock">
+    <label>
+      <input type="checkbox" id="consentCheckbox" />
+      I confirm I am the legal owner or authorized technician of the connected device.
+    </label>
+  </div>
 
-    <button class="ghost-btn" onclick="runFRP()">FRP Unlock</button>
-    <button class="ghost-btn" onclick="runNetwork()">Network Unlock</button>
-    <button class="ghost-btn" onclick="openOEM()">OEM Tools</button>
-    <button class="ghost-btn" onclick="openFastboot()">Fastboot Tools</button>
-  </section>
+  <div>
+    <button id="frpBtn">Run FRP Unlock</button>
+    <button id="netBtn">Run Network Unlock</button>
+    <button id="manifestBtn">View Manifest</button>
+    <button id="flashBtn">Flash Firmware</button>
+    <button id="mirrorBtn">Mirror Screen</button>
+    <button id="refillBtn">Refill Credits</button>
+  </div>
 
-  <!-- REAL-TIME LOGS -->
-  <section id="logs" class="panel">
-    <h2>Logs</h2>
-    <pre id="log-output">Initializing...</pre>
-  </section>
+  <div id="flashModal" class="ghosttech-modal hidden">
+    <div class="ghosttech-modal-content">
+      <h2>Flash Firmware</h2>
+      <p>Select your firmware payload.</p>
+      <input type="file" id="firmwareUpload" accept=".zip,.bin,.img" />
+      <button onclick="handleFlash()">Confirm &amp; Flash</button>
+      <button onclick="closeModal()">Cancel</button>
+    </div>
+  </div>
 
-</div>
+  <pre id="manifestDisplay"></pre>
+
+  <script>
+    const {
+      loadFirmware,
+      findLocalFirmware,
+      getManifest,
+      detectDeviceModel,
+      runUnlockSequence,
+      getCredits,
+      searchOnlineFirmware
+    } = require('./loader.js');
+
+    const { launchScrcpy } = require('./mirror.js');
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const dropdown = document.getElementById('firmwareDropdown');
+      const deviceModelDisplay = document.getElementById('deviceModel');
+      const creditMeter = document.getElementById('creditMeter');
+      const manifestDisplay = document.getElementById('manifestDisplay');
+
+      function populateFirmwareDropdown() {
+        const firmwareList = loadFirmware();
+        dropdown.innerHTML = firmwareList.map(f => `<option value="${f}">${f}</option>`).join('');
+      }
+
+      function autoDetectDevice() {
+        const model = detectDeviceModel();
+        if (model) {
+          deviceModelDisplay.textContent = `Device: ${model}`;
+          const localMatches = findLocalFirmware(model);
+          if (localMatches.length === 0) {
+            searchOnlineFirmware(model);
+          }
+          for (let option of dropdown.options) {
+            if (option.value.toLowerCase().includes(model.toLowerCase())) {
+              option.selected = true;
+              break;
+            }
+          }
+        } else {
+          deviceModelDisplay.textContent = `Device: Not detected`;
+        }
+      }
+
+      function updateCreditMeter() {
+        const credits = getCredits();
+        creditMeter.textContent = (credits === Infinity)
+          ? `Credits: MASTER (unlimited)`
+          : `Credits: ${credits}`;
+        const buttons = ['frpBtn', 'netBtn', 'flashBtn'];
+        buttons.forEach(id => {
+          document.getElementById(id).disabled = !(credits === Infinity || credits > 0);
+        });
+      }
+
+      function isConsentGiven() {
+        return document.getElementById('consentCheckbox').checked;
+      }
+
+      function enforceConsent() {
+        if (!isConsentGiven()) {
+          alert("You must confirm device ownership before unlocking.");
+          return false;
+        }
+        return true;
+      }
+
+      function runFRP() {
+        if (!enforceConsent()) return;
+        const selected = dropdown.value;
+        runUnlockSequence("FRP", selected);
+        updateCreditMeter();
+      }
+
+      function runNetworkUnlock() {
+        if (!enforceConsent()) return;
+        const selected = dropdown.value;
+        runUnlockSequence("Network", selected);
+        updateCreditMeter();
+      }
+
+      function viewManifest() {
+        const manifest = getManifest();
+        manifestDisplay.textContent = manifest ? JSON.stringify(manifest, null, 2) : 'No manifest found.';
+      }
+
+      window.handleFlash = () => {
+        if (!enforceConsent()) return;
+        const fileInput = document.getElementById('firmwareUpload');
+        const file = fileInput.files[0];
+        if (file) {
+          runUnlockSequence("Flash", file.name);
+          updateCreditMeter();
+        }
+        closeModal();
+      };
+
+      window.closeModal = () => {
+        document.getElementById('flashModal').classList.add('hidden');
+      };
+
+      document.getElementById('flashBtn').addEventListener('click', () => {
+        document.getElementById('flashModal').classList.remove('hidden');
+      });
+
+      document.getElementById('frpBtn').addEventListener('click', runFRP);
+      document.getElementById('netBtn').addEventListener('click', runNetworkUnlock);
+      document.getElementById('manifestBtn').addEventListener('click', viewManifest);
+      document.getElementById('mirrorBtn').addEventListener('click', launchScrcpy);
+      document.getElementById('refillBtn').addEventListener('click', () => {
+        require('electron').shell.openExternal('https://gumroad.com/l/ghosttech-credits');
+      });
+
+      populateFirmwareDropdown();
+      autoDetectDevice();
+      updateCreditMeter();
+    });
+  </script>
+</body>
+</html>

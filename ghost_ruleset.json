@@ -1,0 +1,15 @@
+{
+  "device_check": {
+    "min_android_version": 10
+  },
+  "bypass_list": [
+    {
+      "type": "user_id",
+      "value": "daniel_sielaff"
+    },
+    {
+      "type": "role",
+      "value": "developer"
+    }
+  ]
+}
